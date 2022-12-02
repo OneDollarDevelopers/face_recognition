@@ -1,6 +1,6 @@
 import face_recognition
 import cv2
-
+from moviepy.editor import *
 # This is a demo of running face recognition on a video file and saving the results to a new video file.
 #
 # PLEASE NOTE: This example requires OpenCV (the `cv2` library) to be installed only to read from your webcam.
@@ -8,7 +8,8 @@ import cv2
 # specific demo. If you have trouble installing it, try any of the other demos that don't require it instead.
 
 # Open the input movie file
-input_movie = cv2.VideoCapture("C:/Users/Mingeon_Choi/face_recognition/examples/example.mp4")
+input_movie = cv2.VideoCapture("examples/example.mp4")
+parent_clip = VideoFileClip('examples/example.mp4', audio=True)
 length = int(input_movie.get(cv2.CAP_PROP_FRAME_COUNT))
 # width = input_movie.get(cv2.CAP_PROP_FRAME_WIDTH)
 # print(width)
@@ -16,13 +17,13 @@ length = int(input_movie.get(cv2.CAP_PROP_FRAME_COUNT))
 
 # Create an output movie file (make sure resolution/frame rate matches input video!)
 fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-output_movie = cv2.VideoWriter('C:/Users/Mingeon_Choi/face_recognition/examples/output2.avi', fourcc, 29.97, (1920, 1080))
+output_movie = cv2.VideoWriter('examples/output2-rose.avi', fourcc, 29.97, (1920, 1080))
 
 # Load some sample pictures and learn how to recognize them.
-jisoo_image = face_recognition.load_image_file("C:/Users/Mingeon_Choi/face_recognition/examples/jisoo.jpg")
+jisoo_image = face_recognition.load_image_file("examples/jisoo.jpg")
 jisoo_face_encoding = face_recognition.face_encodings(jisoo_image)[0]
 
-rose_image = face_recognition.load_image_file("C:/Users/Mingeon_Choi/face_recognition/examples/rose.jpg")
+rose_image = face_recognition.load_image_file("examples/rose.jpg")
 rose_face_encoding = face_recognition.face_encodings(rose_image)[0]
 
 known_faces = [
@@ -34,13 +35,17 @@ known_faces = [
 face_locations = []
 face_encodings = []
 face_names = []
+videoclip=[]
+audioclip=[]
 frame_number = 0
-
+start_time = 0
+finish_time = 0
 while True:
     # Grab a single frame of video
     ret, frame = input_movie.read()
+    second = input_movie.get(cv2.CAP_PROP_FPS)
+    print(length)
     frame_number += 1
-
 
     # Quit when the input video file ends
     if not ret:
@@ -65,13 +70,15 @@ while True:
         name = None
 
         if match[0]:
-            print("jisoo다")
-            name = "jisoo"
+            flag = True
+            print("와 지수다")
+            name = "jisu"
         elif match[1]:
             print(" 와 로제다")
             name = "rose"
         else:
             flag = False
+            print('아무도 없다')
 
 
         face_names.append(name)
@@ -79,7 +86,6 @@ while True:
     # Label the results
     for (top, right, bottom, left), name in zip(face_locations, face_names):
         if not name:
-
             continue
 
         # Draw a box around the face
@@ -92,11 +98,22 @@ while True:
 
     # Write the resulting image to the output video file
     print("Writing frame {} / {}".format(frame_number, length))
+    start_time = (frame_number-1) * (1 / second)
+    finish_time = start_time + (1/second)
     if flag:
-        output_movie.write(frame)
+        videoclip.append(
+            parent_clip.subclip(start_time, finish_time)
+        )
+        print('Nice!') 
     else:
         continue
 
 # All done!
+final_clip = concatenate_videoclips(videoclip)
+final_clip.write_videofile("examples/moviepy.mp4",  codec='libx264', 
+                     audio_codec='aac', 
+                     temp_audiofile='temp-audio.m4a', 
+                     remove_temp=True)
+
 input_movie.release()
 cv2.destroyAllWindows()
